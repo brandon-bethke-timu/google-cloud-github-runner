@@ -105,7 +105,7 @@ class GCloudClient:
             f"sudo -u runner /actions-runner/config.sh --url {shlex.quote(repo_url)} "
             f"--token {shlex.quote(registration_token)} "
             f"--name {shlex.quote(instance_name)} "
-            "--labels {shlex.quote(template_name)} "
+            f"--labels {shlex.quote(template_name)} "
             f"{runner_group_flag} "
             "--ephemeral "
             "--unattended "
