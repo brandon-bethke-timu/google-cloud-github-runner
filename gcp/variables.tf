@@ -108,13 +108,13 @@ variable "github_runners_manager_max_instance_count" {
 }
 
 # Maximum runtime for GitHub Actions runner VMs before Compute Engine force-deletes them
-variable "github_runner_max_run_duration" {
+variable "github_runners_max_run_duration" {
   description = "Maximum runtime in seconds for GitHub Actions runner VMs before termination"
   type        = number
   default     = (86400 * 5) + 300
 
   validation {
-    condition     = var.github_runner_max_run_duration > 0
+    condition     = var.github_runners_max_run_duration > 0
     error_message = "Maximum run duration must be greater than 0 seconds."
   }
 }
