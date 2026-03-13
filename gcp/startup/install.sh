@@ -73,6 +73,33 @@ sudo apt-get install -y \
 	unzip \
 	zip
 
+echo "Installing Java JRE..."
+sudo apt-get install -y openjdk-21-jre-headless
+echo "export JAVA_HOME_21=/usr/lib/jvm/java-21-openjdk-amd64" | sudo tee -a /etc/profile.d/java.sh
+
+# Install kubectl
+echo "Installing kubectl..."
+
+sudo curl -fsSL https://pkgs.k8s.io/core:/stable:/v1.35/deb/Release.key \
+  | sudo gpg --dearmor -o /etc/apt/keyrings/kubernetes-apt-keyring.gpg
+
+echo "deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.gpg] \
+https://pkgs.k8s.io/core:/stable:/v1.35/deb/ /" \
+  | sudo tee /etc/apt/sources.list.d/kubernetes.list
+
+sudo apt-get update
+sudo apt-get install -y kubectl
+
+echo "Installing Helm..."
+curl -fsSL -o get_helm.sh https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3
+chmod 700 get_helm.sh
+./get_helm.sh
+rm -f get_helm.sh
+
+# Install Git LFS
+echo "Installing Git LFS..."
+sudo apt-get install -y git-lfs
+
 # Verify required commands are available
 readonly REQUIRED_COMMANDS=(curl gzip jq sed tar)
 for cmd in "${REQUIRED_COMMANDS[@]}"; do
