@@ -112,7 +112,18 @@ class GCloudClient:
             "--unattended "
             "--no-default-labels "
             "--disableupdate && "
-            "sudo -u runner ./run.sh"
+            "max_attempts=3; "
+            "attempt=1; "
+            "while [ \"$attempt\" -le \"$max_attempts\" ]; do "
+            "sudo -u runner ./run.sh && exit 0; "
+            "if [ \"$attempt\" -eq \"$max_attempts\" ]; then "
+            "echo \"ERROR: ./run.sh failed after ${max_attempts} attempts; giving up.\" >&2; "
+            "exit 1; "
+            "fi; "
+            "echo \"WARNING: ./run.sh failed on attempt ${attempt}/${max_attempts}; retrying in 5 seconds.\"; "
+            "attempt=$((attempt + 1)); "
+            "sleep 5; "
+            "done"
         )
         metadata = compute_v1.Metadata()
         metadata.items = [
