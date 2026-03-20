@@ -85,9 +85,9 @@ variable "github_runners_internal_cidr" {
 # https://docs.github.com/en/webhooks/using-webhooks/best-practices-for-using-webhooks#respond-within-10-seconds
 # Therefore, we always have to have one instance running and cannot scale to 0.
 variable "github_runners_manager_min_instance_count" {
-  description = "GitHub Actions Runners manager app min. instance count (a minimum of one Cloud Run instance is required to avoid GitHub webhook timeout!)"
+  description = "GitHub Actions Runners manager app min. instance count to keep warm for GitHub webhook bursts"
   type        = number
-  default     = 1
+  default     = 2
 
   validation {
     condition     = var.github_runners_manager_min_instance_count >= 1
@@ -99,11 +99,23 @@ variable "github_runners_manager_min_instance_count" {
 variable "github_runners_manager_max_instance_count" {
   description = "GitHub Actions Runners manager app maximum instance count (Max. number of Cloud Run instances)"
   type        = number
-  default     = 1
+  default     = 5
 
   validation {
     condition     = var.github_runners_manager_max_instance_count >= var.github_runners_manager_min_instance_count
     error_message = "Maximum instance count must be larger than or equal to github_runners_manager_min_instance_count."
+  }
+}
+
+# Maximum concurrent requests that each Cloud Run instance may handle
+variable "github_runners_manager_max_instance_request_concurrency" {
+  description = "GitHub Actions Runners manager app maximum concurrent requests per Cloud Run instance"
+  type        = number
+  default     = 8
+
+  validation {
+    condition     = var.github_runners_manager_max_instance_request_concurrency >= 1
+    error_message = "Cloud Run max instance request concurrency must be greater than or equal to 1."
   }
 }
 
