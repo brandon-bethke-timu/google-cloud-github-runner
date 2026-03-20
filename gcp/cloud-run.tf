@@ -18,10 +18,6 @@ resource "google_cloud_run_v2_service" "cloud_run_github_runners_manager" {
   location = var.region
   ingress  = "INGRESS_TRAFFIC_ALL"
 
-  scaling {
-    max_instance_count = var.github_runners_manager_max_instance_count
-  }
-
   template {
     service_account                  = module.service-account-cloud-run-github-runners-manager.email
     execution_environment            = "EXECUTION_ENVIRONMENT_GEN2"
@@ -29,6 +25,7 @@ resource "google_cloud_run_v2_service" "cloud_run_github_runners_manager" {
 
     scaling {
       min_instance_count = var.github_runners_manager_min_instance_count
+      max_instance_count = var.github_runners_manager_max_instance_count
     }
 
     containers {
