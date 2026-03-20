@@ -87,7 +87,7 @@ variable "github_runners_internal_cidr" {
 variable "github_runners_manager_min_instance_count" {
   description = "GitHub Actions Runners manager app min. instance count to keep warm for GitHub webhook bursts"
   type        = number
-  default     = 2
+  default     = 1
 
   validation {
     condition     = var.github_runners_manager_min_instance_count >= 1
@@ -99,7 +99,7 @@ variable "github_runners_manager_min_instance_count" {
 variable "github_runners_manager_max_instance_count" {
   description = "GitHub Actions Runners manager app maximum instance count (Max. number of Cloud Run instances)"
   type        = number
-  default     = 5
+  default     = 1
 
   validation {
     condition     = var.github_runners_manager_max_instance_count >= var.github_runners_manager_min_instance_count

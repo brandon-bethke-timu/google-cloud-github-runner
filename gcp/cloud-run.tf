@@ -21,6 +21,7 @@ module "cloud_run_github_runners_manager" {
   containers = {
     github-runners-manager = {
       image = data.google_artifact_registry_docker_image.container-image-github-runners-manager.self_link
+      max_instance_request_concurrency = var.github_runners_manager_max_instance_request_concurrency
       resources = {
         limits = {
           cpu    = "1000m"
@@ -65,8 +66,6 @@ module "cloud_run_github_runners_manager" {
     # Second generation Cloud Run for faster CPU.
     # The first generation with faster cold starts is still too slow for our webhook.
     gen2_execution_environment = true
-    # Match Cloud Run request concurrency to the container's Gunicorn thread count.
-    max_instance_request_concurrency = var.github_runners_manager_max_instance_request_concurrency
     scaling = {
       min_instance_count = var.github_runners_manager_min_instance_count # Min. 1, we do not scale to zero.
       max_instance_count = var.github_runners_manager_max_instance_count
