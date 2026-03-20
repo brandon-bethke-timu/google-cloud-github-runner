@@ -51,7 +51,6 @@ class WebhookService:
         labels = workflow_job.get('labels', [])
         repo_url = payload.get('repository', {}).get('html_url')
         repo_name = payload.get('repository', {}).get('full_name')
-        repo_owner_url = payload.get('repository', {}).get('owner', {}).get('html_url')
         org_name = payload.get('organization', {}).get('login')
 
         # Sanitize log output - don't log full payload
@@ -67,7 +66,7 @@ class WebhookService:
                         break
             if template_name:
                 logger.info("Found matching gcp- label prefix: %s", template_name)
-                self._handle_queued_job(template_name, repo_url, repo_owner_url, repo_name, org_name)
+                self._handle_queued_job(template_name, repo_url, repo_name, org_name)
             else:
                 logger.warning("No matching gcp- label prefix found for labels %s. Ignoring job.", labels)
 
@@ -75,21 +74,50 @@ class WebhookService:
         elif action == 'completed':
             self._handle_completed_job(workflow_job)
 
-    def _handle_queued_job(self, template_name, repo_url, repo_owner_url, repo_name, org_name):
+    def _handle_queued_job(self, template_name, repo_url, repo_name, org_name):
         """Handle queued workflow job."""
+        instance_name = self.gcloud_client.build_runner_instance_name(template_name)
+
         try:
-            # Get registration token
             if org_name:
-                # Create GitHub Actions runner instance for organization
-                token = self.github_client.get_registration_token(org_name=org_name)
-                self.gcloud_client.create_runner_instance(token, repo_owner_url, template_name, repo_name)
-            elif repo_name:
-                # Create GitHub Actions runner instance for repository
+                jit_config = self.github_client.get_jit_config(
+                    runner_name=instance_name,
+                    labels=[template_name],
+                    org_name=org_name,
+                    runner_group_name=self.gcloud_client.github_runner_group
+                )
+                self.gcloud_client.create_runner_instance_from_jit_config(
+                    jit_config,
+                    template_name,
+                    instance_name,
+                    repo_name
+                )
+                return
+
+            if repo_name:
+                try:
+                    jit_config = self.github_client.get_jit_config(
+                        runner_name=instance_name,
+                        labels=[template_name],
+                        repo_name=repo_name,
+                        runner_group_name=self.gcloud_client.github_runner_group
+                    )
+                    self.gcloud_client.create_runner_instance_from_jit_config(
+                        jit_config,
+                        template_name,
+                        instance_name,
+                        repo_name
+                    )
+                    return
+                except Exception as e:
+                    logger.warning("Falling back to registration token flow for %s: %s", repo_name, str(e))
+
                 token = self.github_client.get_registration_token(repo_name=repo_name)
                 self.gcloud_client.create_runner_instance(token, repo_url, template_name, repo_name)
-            else:
-                logger.error("Neither repository nor organization found in payload. Ignoring job.")
                 return
+
+            logger.error("Neither repository nor organization found in payload. Ignoring job.")
+            return
 
         except Exception as e:
             logger.error("Failed to spawn runner: %s", str(e))

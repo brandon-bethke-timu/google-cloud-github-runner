@@ -6,6 +6,7 @@ import time
 import jwt
 import requests
 import logging
+from requests import HTTPError
 
 REQUEST_TIMEOUT = 30  # seconds
 
@@ -67,11 +68,7 @@ class GitHubClient:
         """Obtains an installation access token."""
         # https://docs.github.com/en/apps/creating-github-apps/authenticating-with-a-github-app/generating-an-installation-access-token-for-a-github-app
         jwt_token = self._generate_jwt()
-        headers = {
-            'Authorization': f'Bearer {jwt_token}',
-            'Accept': 'application/vnd.github+json',
-            'X-GitHub-Api-Version': '2022-11-28'
-        }
+        headers = self._build_headers(jwt_token)
         url = f'https://api.github.com/app/installations/{self.installation_id}/access_tokens'
 
         response = requests.post(url, headers=headers, timeout=REQUEST_TIMEOUT)
@@ -79,15 +76,36 @@ class GitHubClient:
         # The installation access token will expire after 1 hour.
         return response.json()['token']
 
+    def _build_headers(self, token):
+        """Build standard GitHub API headers for the current REST API version."""
+        return {
+            'Authorization': f'Bearer {token}',
+            'Accept': 'application/vnd.github+json',
+            'X-GitHub-Api-Version': '2026-03-10'
+        }
+
+    def _get_runner_group_id(self, org_name, runner_group_name=None):
+        """Resolve a runner group ID by name for an organization."""
+        token = self.get_installation_access_token()
+        headers = self._build_headers(token)
+        url = f'https://api.github.com/orgs/{org_name}/actions/runner-groups'
+        params = {'per_page': 100}
+
+        response = requests.get(url, headers=headers, params=params, timeout=REQUEST_TIMEOUT)
+        response.raise_for_status()
+
+        group_name = (runner_group_name or 'Default').strip().lower()
+        for runner_group in response.json().get('runner_groups', []):
+            if runner_group.get('name', '').strip().lower() == group_name:
+                return runner_group['id']
+
+        raise ValueError(f"Runner group '{runner_group_name or 'Default'}' not found for organization '{org_name}'")
+
     def get_registration_token(self, org_name=None, repo_name=None):
         """Gets a runner registration token."""
         # https://docs.github.com/en/rest/actions/self-hosted-runners
         token = self.get_installation_access_token()
-        headers = {
-            'Authorization': f'Bearer {token}',
-            'Accept': 'application/vnd.github+json',
-            'X-GitHub-Api-Version': '2022-11-28'
-        }
+        headers = self._build_headers(token)
         if org_name:
             # GitHub Docs: https://t.ly/dAyGK
             url = f'https://api.github.com/orgs/{org_name}/actions/runners/registration-token'
@@ -102,3 +120,43 @@ class GitHubClient:
         response = requests.post(url, headers=headers, timeout=REQUEST_TIMEOUT)
         response.raise_for_status()
         return response.json()['token']
+
+    def get_jit_config(self, runner_name, labels, org_name=None, repo_name=None, runner_group_name=None):
+        """Generate an encoded JIT config for a self-hosted runner."""
+        if not runner_name:
+            raise ValueError("runner_name is required")
+
+        if not labels:
+            raise ValueError("labels are required")
+
+        token = self.get_installation_access_token()
+        headers = self._build_headers(token)
+
+        if org_name:
+            runner_group_id = self._get_runner_group_id(org_name, runner_group_name)
+            url = f'https://api.github.com/orgs/{org_name}/actions/runners/generate-jitconfig'
+            logger.info("Create JIT config for organization runner: %s", org_name)
+        elif repo_name:
+            repo_owner = repo_name.split('/')[0]
+            runner_group_id = self._get_runner_group_id(repo_owner, runner_group_name)
+            url = f'https://api.github.com/repos/{repo_name}/actions/runners/generate-jitconfig'
+            logger.info("Create JIT config for repository runner: %s", repo_name)
+        else:
+            raise ValueError("Either org_name or repo_name must be provided")
+
+        payload = {
+            'name': runner_name,
+            'runner_group_id': runner_group_id,
+            'labels': labels,
+            'work_folder': '_work'
+        }
+
+        response = requests.post(url, headers=headers, json=payload, timeout=REQUEST_TIMEOUT)
+
+        try:
+            response.raise_for_status()
+        except HTTPError as exc:
+            logger.warning("Failed to create JIT config for runner %s: %s", runner_name, exc)
+            raise
+
+        return response.json()['encoded_jit_config']

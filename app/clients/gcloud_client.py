@@ -55,53 +55,21 @@ class GCloudClient:
         except Exception:
             return None
 
-    def create_runner_instance(self, registration_token, repo_url, template_name, instance_label=None):
-        """
-        Create a new GCE instance for a GitHub Actions runner.
-
-        Args:
-            registration_token (str): The GitHub Actions runner registration token.
-            repo_url (str): The URL of the repository or organization.
-            template_name (str): The name of the instance template to use.
-            instance_label (str): Label to add to the Instance for Cost Tracking.
-
-        Returns:
-            str: The name of the created instance.
-        """
-        instance_template_resource = self._get_template_name(template_name)
-        if instance_template_resource:
-            logger.info(f"Found matching instance template: {instance_template_resource.name}")
-        else:
-            logger.warning(f"No matching instance template found for label '{template_name}' in region {self.region}. "
-                           "Skipping instance creation.")
-            return None
-
+    @staticmethod
+    def build_runner_instance_name(template_name):
+        """Build a unique runner instance name from the selected template."""
         instance_uuid = uuid.uuid4().hex[:16]
-        if instance_template_resource.name.startswith("dependabot"):
-            instance_name = f"dependabot-{instance_uuid}"
-        else:
-            instance_name = f"gcp-runner-{instance_uuid}"
+        if template_name.startswith("dependabot"):
+            return f"dependabot-{instance_uuid}"
+        return f"gcp-runner-{instance_uuid}"
 
-        logger.info(f"Creating GCE instance {instance_name} with template {instance_template_resource.self_link}")
-
-        # Set instance name
-        instance_resource = compute_v1.Instance()  # google.cloud.compute_v1.types.Instance
-        instance_resource.name = instance_name
-
-        if instance_label is not None:
-            owner, repo = instance_label.split("/")
-            instance_resource.labels = {
-                "gha-owner": owner.lower(),
-                "gha-repo": repo.lower(),
-                "gha-runner": template_name
-            }
-
-        # Set metadata (startup script) - use shlex.quote to prevent command injection
+    def _build_startup_script_with_registration_token(self, registration_token, repo_url, template_name, instance_name):
+        """Build the startup script for the classic registration-token runner flow."""
         runner_group_flag = ""
         if self.github_runner_group:
             runner_group_flag = f" --runnergroup {shlex.quote(self.github_runner_group)}"
 
-        startup_script = (
+        return (
             "cd /actions-runner && "
             f"sudo -u runner ./config.sh --url {shlex.quote(repo_url)} "
             f"--token {shlex.quote(registration_token)} "
@@ -125,6 +93,48 @@ class GCloudClient:
             "sleep 5; "
             "done"
         )
+
+    def _build_startup_script_with_jit_config(self, encoded_jit_config):
+        """Build the startup script for GitHub's JIT runner flow."""
+        return (
+            "cd /actions-runner && "
+            "max_attempts=3; "
+            "attempt=1; "
+            "while [ \"$attempt\" -le \"$max_attempts\" ]; do "
+            f"sudo -u runner ./run.sh --jitconfig {shlex.quote(encoded_jit_config)} && exit 0; "
+            "if [ \"$attempt\" -eq \"$max_attempts\" ]; then "
+            "echo \"ERROR: ./run.sh --jitconfig failed after ${max_attempts} attempts; giving up.\" >&2; "
+            "exit 1; "
+            "fi; "
+            "echo \"WARNING: ./run.sh --jitconfig failed on attempt ${attempt}/${max_attempts}; retrying in 5 seconds.\"; "
+            "attempt=$((attempt + 1)); "
+            "sleep 5; "
+            "done"
+        )
+
+    def _create_runner_instance_from_startup_script(self, startup_script, template_name, instance_name, instance_label=None):
+        """Create a new GCE runner instance from a rendered startup script."""
+        instance_template_resource = self._get_template_name(template_name)
+        if instance_template_resource:
+            logger.info(f"Found matching instance template: {instance_template_resource.name}")
+        else:
+            logger.warning(f"No matching instance template found for label '{template_name}' in region {self.region}. "
+                           "Skipping instance creation.")
+            return None
+
+        logger.info(f"Creating GCE instance {instance_name} with template {instance_template_resource.self_link}")
+
+        instance_resource = compute_v1.Instance()
+        instance_resource.name = instance_name
+
+        if instance_label is not None:
+            owner, repo = instance_label.split("/")
+            instance_resource.labels = {
+                "gha-owner": owner.lower(),
+                "gha-repo": repo.lower(),
+                "gha-runner": template_name
+            }
+
         metadata = compute_v1.Metadata()
         metadata.items = [
             compute_v1.Items(key="startup-script", value=startup_script),
@@ -133,8 +143,6 @@ class GCloudClient:
         ]
         instance_resource.metadata = metadata
 
-        # Create the request
-        # https://docs.cloud.google.com/python/docs/reference/compute/latest/google.cloud.compute_v1.types.InsertInstanceRequest
         request = compute_v1.InsertInstanceRequest(
             project=self.project_id,
             zone=self.zone,
@@ -143,7 +151,6 @@ class GCloudClient:
         )
 
         try:
-            # https://docs.cloud.google.com/compute/docs/reference/rest/v1/instances/insert
             operation = self.instance_client.insert(
                 request=request
             )
@@ -152,6 +159,43 @@ class GCloudClient:
         except Exception as e:
             logger.error(f"Failed to create instance: {e}")
             raise
+
+    def create_runner_instance(self, registration_token, repo_url, template_name, instance_label=None):
+        """
+        Create a new GCE instance for a GitHub Actions runner.
+
+        Args:
+            registration_token (str): The GitHub Actions runner registration token.
+            repo_url (str): The URL of the repository or organization.
+            template_name (str): The name of the instance template to use.
+            instance_label (str): Label to add to the Instance for Cost Tracking.
+
+        Returns:
+            str: The name of the created instance.
+        """
+        instance_name = self.build_runner_instance_name(template_name)
+        startup_script = self._build_startup_script_with_registration_token(
+            registration_token,
+            repo_url,
+            template_name,
+            instance_name
+        )
+        return self._create_runner_instance_from_startup_script(
+            startup_script,
+            template_name,
+            instance_name,
+            instance_label
+        )
+
+    def create_runner_instance_from_jit_config(self, encoded_jit_config, template_name, instance_name, instance_label=None):
+        """Create a new GCE runner instance from an encoded JIT config."""
+        startup_script = self._build_startup_script_with_jit_config(encoded_jit_config)
+        return self._create_runner_instance_from_startup_script(
+            startup_script,
+            template_name,
+            instance_name,
+            instance_label
+        )
 
     def delete_runner_instance(self, instance_name):
         """

@@ -126,6 +126,36 @@ class TestGCloudClient:
         assert '--runnergroup platform-runners' in startup_script
 
     @patch('app.clients.gcloud_client.compute_v1')
+    def test_create_runner_instance_from_jit_config(self, mock_compute, mock_env_vars):
+        """Test creating a runner instance from JIT config."""
+        mock_instance_client = MagicMock()
+        mock_operation = MagicMock()
+        mock_operation.name = 'operation-123'
+        mock_instance_client.insert.return_value = mock_operation
+        mock_compute.InstancesClient.return_value = mock_instance_client
+
+        mock_templates_client = MagicMock()
+        mock_template = MagicMock()
+        mock_template.name = 'gcp-ubuntu-24-04-12345678901234'
+        mock_template.self_link = ('https://www.googleapis.com/compute/v1/projects/test-project/regions/us-central1/'
+                                   'instanceTemplates/gcp-ubuntu-24-04-12345678901234')
+        mock_templates_client.list.return_value = [mock_template]
+        mock_compute.RegionInstanceTemplatesClient.return_value = mock_templates_client
+
+        client = GCloudClient()
+        instance_name = client.create_runner_instance_from_jit_config(
+            'encoded-jit-config',
+            'gcp-ubuntu-24.04',
+            'gcp-runner-1234abcd5678efgh'
+        )
+
+        assert instance_name == 'gcp-runner-1234abcd5678efgh'
+        startup_script = mock_compute.Items.call_args_list[0].kwargs['value']
+        assert startup_script.startswith('cd /actions-runner && ')
+        assert './run.sh --jitconfig' in startup_script
+        assert './config.sh' not in startup_script
+
+    @patch('app.clients.gcloud_client.compute_v1')
     def test_create_runner_instance_error(self, mock_compute, mock_env_vars):
         """Test error handling when creating instance fails."""
         mock_instance_client = MagicMock()

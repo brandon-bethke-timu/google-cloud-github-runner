@@ -9,10 +9,12 @@ class TestWebhookService:
     def test_handle_queued_job_with_matching_label(self, mock_gh_client_class, mock_gc_client_class):
         """Test handling queued job with matching label."""
         mock_gh_client = Mock()
-        mock_gh_client.get_registration_token.return_value = "fake-token"
+        mock_gh_client.get_jit_config.return_value = "encoded-jit-config"
         mock_gh_client_class.return_value = mock_gh_client
 
         mock_gc_client = Mock()
+        mock_gc_client.build_runner_instance_name.return_value = 'gcp-runner-12345'
+        mock_gc_client.github_runner_group = ''
         mock_gc_client_class.return_value = mock_gc_client
 
         service = WebhookService()
@@ -30,11 +32,16 @@ class TestWebhookService:
 
         service.handle_workflow_job(payload)
 
-        mock_gh_client.get_registration_token.assert_called_once_with(repo_name='owner/repo')
-        mock_gc_client.create_runner_instance.assert_called_once_with(
-            'fake-token',
-            'https://github.com/owner/repo',
+        mock_gh_client.get_jit_config.assert_called_once_with(
+            runner_name='gcp-runner-12345',
+            labels=['gcp-ubuntu-24.04'],
+            repo_name='owner/repo',
+            runner_group_name=''
+        )
+        mock_gc_client.create_runner_instance_from_jit_config.assert_called_once_with(
+            'encoded-jit-config',
             'gcp-ubuntu-24.04',
+            'gcp-runner-12345',
             'owner/repo'
         )
 
@@ -43,10 +50,12 @@ class TestWebhookService:
     def test_handle_queued_job_for_org(self, mock_gh_client_class, mock_gc_client_class):
         """Test handling queued job for organization."""
         mock_gh_client = Mock()
-        mock_gh_client.get_registration_token.return_value = "org-token"
+        mock_gh_client.get_jit_config.return_value = "encoded-jit-config"
         mock_gh_client_class.return_value = mock_gh_client
 
         mock_gc_client = Mock()
+        mock_gc_client.build_runner_instance_name.return_value = 'gcp-runner-12345'
+        mock_gc_client.github_runner_group = ''
         mock_gc_client_class.return_value = mock_gc_client
 
         service = WebhookService()
@@ -67,7 +76,18 @@ class TestWebhookService:
 
         service.handle_workflow_job(payload)
 
-        mock_gh_client.get_registration_token.assert_called_once_with(org_name='my-org')
+        mock_gh_client.get_jit_config.assert_called_once_with(
+            runner_name='gcp-runner-12345',
+            labels=['gcp-ubuntu-24.04'],
+            org_name='my-org',
+            runner_group_name=''
+        )
+        mock_gc_client.create_runner_instance_from_jit_config.assert_called_once_with(
+            'encoded-jit-config',
+            'gcp-ubuntu-24.04',
+            'gcp-runner-12345',
+            'my-org/repo'
+        )
 
     @patch('app.services.webhook_service.GCloudClient')
     @patch('app.services.webhook_service.GitHubClient')
@@ -99,6 +119,42 @@ class TestWebhookService:
 
     @patch('app.services.webhook_service.GCloudClient')
     @patch('app.services.webhook_service.GitHubClient')
+    def test_handle_queued_job_for_repo_falls_back_to_registration_token(self, mock_gh_client_class, mock_gc_client_class):
+        """Test repository fallback when JIT config creation fails."""
+        mock_gh_client = Mock()
+        mock_gh_client.get_jit_config.side_effect = ValueError("Runner group 'Default' not found")
+        mock_gh_client.get_registration_token.return_value = "repo-token"
+        mock_gh_client_class.return_value = mock_gh_client
+
+        mock_gc_client = Mock()
+        mock_gc_client.build_runner_instance_name.return_value = 'gcp-runner-12345'
+        mock_gc_client_class.return_value = mock_gc_client
+
+        service = WebhookService()
+
+        payload = {
+            'action': 'queued',
+            'workflow_job': {
+                'labels': ['gcp-ubuntu-24.04']
+            },
+            'repository': {
+                'html_url': 'https://github.com/owner/repo',
+                'full_name': 'owner/repo'
+            }
+        }
+
+        service.handle_workflow_job(payload)
+
+        mock_gh_client.get_registration_token.assert_called_once_with(repo_name='owner/repo')
+        mock_gc_client.create_runner_instance.assert_called_once_with(
+            'repo-token',
+            'https://github.com/owner/repo',
+            'gcp-ubuntu-24.04',
+            'owner/repo'
+        )
+
+    @patch('app.services.webhook_service.GCloudClient')
+    @patch('app.services.webhook_service.GitHubClient')
     def test_handle_completed_job(self, mock_gh_client_class, mock_gc_client_class):
         """Test handling completed job."""
         mock_gh_client = Mock()
@@ -112,13 +168,13 @@ class TestWebhookService:
         payload = {
             'action': 'completed',
             'workflow_job': {
-                'runner_name': 'runner-12345'
+                'runner_name': 'gcp-runner-12345'
             }
         }
 
         service.handle_workflow_job(payload)
 
-        mock_gc_client.delete_runner_instance.assert_called_once_with('runner-12345')
+        mock_gc_client.delete_runner_instance.assert_called_once_with('gcp-runner-12345')
 
     @patch('app.services.webhook_service.GCloudClient')
     @patch('app.services.webhook_service.GitHubClient')
@@ -146,10 +202,12 @@ class TestWebhookService:
     def test_handle_queued_job_raises_exception(self, mock_gh_client_class, mock_gc_client_class):
         """Test error handling when spawning runner fails."""
         mock_gh_client = Mock()
+        mock_gh_client.get_jit_config.side_effect = Exception("API Error")
         mock_gh_client.get_registration_token.side_effect = Exception("API Error")
         mock_gh_client_class.return_value = mock_gh_client
 
         mock_gc_client = Mock()
+        mock_gc_client.github_runner_group = ''
         mock_gc_client_class.return_value = mock_gc_client
 
         service = WebhookService()
@@ -208,11 +266,11 @@ class TestWebhookService:
         payload = {
             'action': 'completed',
             'workflow_job': {
-                'runner_name': 'runner-12345'
+                'runner_name': 'gcp-runner-12345'
             }
         }
 
         # Should not raise exception, just log error
         service.handle_workflow_job(payload)
 
-        mock_gc_client.delete_runner_instance.assert_called_once_with('runner-12345')
+        mock_gc_client.delete_runner_instance.assert_called_once_with('gcp-runner-12345')

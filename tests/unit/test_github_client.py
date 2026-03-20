@@ -152,3 +152,54 @@ class TestGitHubClient:
         client = GitHubClient()
         with pytest.raises(Exception, match="Key error"):
             client._generate_jwt()
+
+    @patch('app.clients.github_client.requests.get')
+    @patch('app.clients.github_client.requests.post')
+    @patch.object(GitHubClient, 'get_installation_access_token')
+    def test_get_jit_config_for_org(self, mock_install_token, mock_post, mock_get, mock_env_vars):
+        """Test getting a JIT config for an organization runner."""
+        mock_install_token.return_value = "INSTALL_TOKEN"
+
+        mock_groups_response = MagicMock()
+        mock_groups_response.json.return_value = {
+            'runner_groups': [
+                {'id': 1, 'name': 'Default'},
+                {'id': 2, 'name': 'platform-runners'}
+            ]
+        }
+        mock_get.return_value = mock_groups_response
+
+        mock_jit_response = MagicMock()
+        mock_jit_response.json.return_value = {'encoded_jit_config': 'ENCODED_JIT'}
+        mock_post.return_value = mock_jit_response
+
+        client = GitHubClient()
+        jit_config = client.get_jit_config(
+            runner_name='gcp-runner-1234',
+            labels=['gcp-ubuntu-24.04'],
+            org_name='my-org',
+            runner_group_name='platform-runners'
+        )
+
+        assert jit_config == 'ENCODED_JIT'
+        mock_get.assert_called_once()
+        mock_post.assert_called_once()
+        assert mock_post.call_args.kwargs['json']['runner_group_id'] == 2
+
+    @patch('app.clients.github_client.requests.get')
+    @patch.object(GitHubClient, 'get_installation_access_token')
+    def test_get_jit_config_runner_group_not_found(self, mock_install_token, mock_get, mock_env_vars):
+        """Test JIT config group lookup failure."""
+        mock_install_token.return_value = "INSTALL_TOKEN"
+        mock_response = MagicMock()
+        mock_response.json.return_value = {'runner_groups': []}
+        mock_get.return_value = mock_response
+
+        client = GitHubClient()
+
+        with pytest.raises(ValueError, match="Runner group 'Default' not found"):
+            client.get_jit_config(
+                runner_name='gcp-runner-1234',
+                labels=['gcp-ubuntu-24.04'],
+                org_name='my-org'
+            )
