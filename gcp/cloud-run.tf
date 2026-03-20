@@ -19,7 +19,6 @@ resource "google_cloud_run_v2_service" "cloud_run_github_runners_manager" {
   ingress  = "INGRESS_TRAFFIC_ALL"
 
   scaling {
-    min_instance_count = var.github_runners_manager_min_instance_count
     max_instance_count = var.github_runners_manager_max_instance_count
   }
 
@@ -27,6 +26,10 @@ resource "google_cloud_run_v2_service" "cloud_run_github_runners_manager" {
     service_account                  = module.service-account-cloud-run-github-runners-manager.email
     execution_environment            = "EXECUTION_ENVIRONMENT_GEN2"
     max_instance_request_concurrency = var.github_runners_manager_max_instance_request_concurrency
+
+    scaling {
+      min_instance_count = var.github_runners_manager_min_instance_count
+    }
 
     containers {
       image = data.google_artifact_registry_docker_image.container-image-github-runners-manager.self_link
@@ -106,9 +109,10 @@ resource "google_cloud_run_v2_service" "cloud_run_github_runners_manager" {
 
 # Allow public invocation of the webhook service
 # https://cloud.google.com/run/docs/authenticating/public
-resource "google_cloud_run_service_iam_binding" "cloud_run_github_runners_manager_public_invoker" {
+resource "google_cloud_run_v2_service_iam_binding" "cloud_run_github_runners_manager_public_invoker" {
+  project  = module.project.project_id
   location = google_cloud_run_v2_service.cloud_run_github_runners_manager.location
-  service  = google_cloud_run_v2_service.cloud_run_github_runners_manager.name
+  name     = google_cloud_run_v2_service.cloud_run_github_runners_manager.name
   role     = "roles/run.invoker"
   members = [
     "allUsers"
