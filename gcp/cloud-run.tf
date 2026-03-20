@@ -13,10 +13,11 @@ data "google_artifact_registry_docker_image" "container-image-github-runners-man
 # Deploy the GitHub Actions Runners manager service on Cloud Run
 # https://registry.terraform.io/providers/hashicorp/google/latest/docs/resources/cloud_run_v2_service
 resource "google_cloud_run_v2_service" "cloud_run_github_runners_manager" {
-  project  = module.project.project_id
-  name     = "github-runners-manager-${local.region_shortnames[var.region]}"
-  location = var.region
-  ingress  = "INGRESS_TRAFFIC_ALL"
+  project              = module.project.project_id
+  name                 = "github-runners-manager-${local.region_shortnames[var.region]}"
+  location             = var.region
+  ingress              = "INGRESS_TRAFFIC_ALL"
+  invoker_iam_disabled = true
 
   template {
     service_account                  = module.service-account-cloud-run-github-runners-manager.email
@@ -101,17 +102,5 @@ resource "google_cloud_run_v2_service" "cloud_run_github_runners_manager" {
   depends_on = [
     google_secret_manager_secret_version.secret-version-default,
     time_sleep.wait_for_service_account_cloud_run
-  ]
-}
-
-# Allow public invocation of the webhook service
-# https://cloud.google.com/run/docs/authenticating/public
-resource "google_cloud_run_v2_service_iam_binding" "cloud_run_github_runners_manager_public_invoker" {
-  project  = module.project.project_id
-  location = google_cloud_run_v2_service.cloud_run_github_runners_manager.location
-  name     = google_cloud_run_v2_service.cloud_run_github_runners_manager.name
-  role     = "roles/run.invoker"
-  members = [
-    "allUsers"
   ]
 }
