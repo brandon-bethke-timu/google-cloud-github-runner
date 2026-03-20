@@ -18,10 +18,12 @@ module "cloud_run_github_runners_manager" {
   name       = "github-runners-manager-${local.region_shortnames[var.region]}"
   type       = "SERVICE"
   region     = var.region
+  template = {
+    max_instance_request_concurrency = var.github_runners_manager_max_instance_request_concurrency
+  }
   containers = {
     github-runners-manager = {
       image = data.google_artifact_registry_docker_image.container-image-github-runners-manager.self_link
-      max_instance_request_concurrency = var.github_runners_manager_max_instance_request_concurrency
       resources = {
         limits = {
           cpu    = "1000m"
