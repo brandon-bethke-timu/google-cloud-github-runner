@@ -38,7 +38,7 @@ class TestWebhookService:
             repo_name='owner/repo',
             runner_group_name=''
         )
-        mock_gc_client.create_runner_instance_from_jit_config.assert_called_once_with(
+        mock_gc_client.create_runner_instance.assert_called_once_with(
             'encoded-jit-config',
             'gcp-ubuntu-24.04',
             'gcp-runner-12345',
@@ -82,7 +82,7 @@ class TestWebhookService:
             org_name='my-org',
             runner_group_name=''
         )
-        mock_gc_client.create_runner_instance_from_jit_config.assert_called_once_with(
+        mock_gc_client.create_runner_instance.assert_called_once_with(
             'encoded-jit-config',
             'gcp-ubuntu-24.04',
             'gcp-runner-12345',
@@ -114,44 +114,8 @@ class TestWebhookService:
 
         service.handle_workflow_job(payload)
 
-        mock_gh_client.get_registration_token.assert_not_called()
+        mock_gh_client.get_jit_config.assert_not_called()
         mock_gc_client.create_runner_instance.assert_not_called()
-
-    @patch('app.services.webhook_service.GCloudClient')
-    @patch('app.services.webhook_service.GitHubClient')
-    def test_handle_queued_job_for_repo_falls_back_to_registration_token(self, mock_gh_client_class, mock_gc_client_class):
-        """Test repository fallback when JIT config creation fails."""
-        mock_gh_client = Mock()
-        mock_gh_client.get_jit_config.side_effect = ValueError("Runner group 'Default' not found")
-        mock_gh_client.get_registration_token.return_value = "repo-token"
-        mock_gh_client_class.return_value = mock_gh_client
-
-        mock_gc_client = Mock()
-        mock_gc_client.build_runner_instance_name.return_value = 'gcp-runner-12345'
-        mock_gc_client_class.return_value = mock_gc_client
-
-        service = WebhookService()
-
-        payload = {
-            'action': 'queued',
-            'workflow_job': {
-                'labels': ['gcp-ubuntu-24.04']
-            },
-            'repository': {
-                'html_url': 'https://github.com/owner/repo',
-                'full_name': 'owner/repo'
-            }
-        }
-
-        service.handle_workflow_job(payload)
-
-        mock_gh_client.get_registration_token.assert_called_once_with(repo_name='owner/repo')
-        mock_gc_client.create_runner_instance.assert_called_once_with(
-            'repo-token',
-            'https://github.com/owner/repo',
-            'gcp-ubuntu-24.04',
-            'owner/repo'
-        )
 
     @patch('app.services.webhook_service.GCloudClient')
     @patch('app.services.webhook_service.GitHubClient')
@@ -203,7 +167,6 @@ class TestWebhookService:
         """Test error handling when spawning runner fails."""
         mock_gh_client = Mock()
         mock_gh_client.get_jit_config.side_effect = Exception("API Error")
-        mock_gh_client.get_registration_token.side_effect = Exception("API Error")
         mock_gh_client_class.return_value = mock_gh_client
 
         mock_gc_client = Mock()
@@ -247,7 +210,7 @@ class TestWebhookService:
 
         service.handle_workflow_job(payload)
 
-        mock_gh_client.get_registration_token.assert_not_called()
+        mock_gh_client.get_jit_config.assert_not_called()
         mock_gc_client.create_runner_instance.assert_not_called()
 
     @patch('app.services.webhook_service.GCloudClient')

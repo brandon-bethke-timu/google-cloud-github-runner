@@ -63,38 +63,7 @@ class GCloudClient:
             return f"dependabot-{instance_uuid}"
         return f"gcp-runner-{instance_uuid}"
 
-    def _build_startup_script_with_registration_token(self, registration_token, repo_url, template_name, instance_name):
-        """Build the startup script for the classic registration-token runner flow."""
-        runner_group_flag = ""
-        if self.github_runner_group:
-            runner_group_flag = f" --runnergroup {shlex.quote(self.github_runner_group)}"
-
-        return (
-            "cd /actions-runner && "
-            f"sudo -u runner ./config.sh --url {shlex.quote(repo_url)} "
-            f"--token {shlex.quote(registration_token)} "
-            f"--name {shlex.quote(instance_name)} "
-            f"--labels {shlex.quote(template_name)} "
-            f"{runner_group_flag} "
-            "--ephemeral "
-            "--unattended "
-            "--no-default-labels "
-            "--disableupdate && "
-            "max_attempts=3; "
-            "attempt=1; "
-            "while [ \"$attempt\" -le \"$max_attempts\" ]; do "
-            "sudo -u runner ./run.sh && exit 0; "
-            "if [ \"$attempt\" -eq \"$max_attempts\" ]; then "
-            "echo \"ERROR: ./run.sh failed after ${max_attempts} attempts; giving up.\" >&2; "
-            "exit 1; "
-            "fi; "
-            "echo \"WARNING: ./run.sh failed on attempt ${attempt}/${max_attempts}; retrying in 5 seconds.\"; "
-            "attempt=$((attempt + 1)); "
-            "sleep 5; "
-            "done"
-        )
-
-    def _build_startup_script_with_jit_config(self, encoded_jit_config):
+    def _build_startup_script(self, encoded_jit_config):
         """Build the startup script for GitHub's JIT runner flow."""
         return (
             "cd /actions-runner && "
@@ -160,36 +129,9 @@ class GCloudClient:
             logger.error(f"Failed to create instance: {e}")
             raise
 
-    def create_runner_instance(self, registration_token, repo_url, template_name, instance_label=None):
-        """
-        Create a new GCE instance for a GitHub Actions runner.
-
-        Args:
-            registration_token (str): The GitHub Actions runner registration token.
-            repo_url (str): The URL of the repository or organization.
-            template_name (str): The name of the instance template to use.
-            instance_label (str): Label to add to the Instance for Cost Tracking.
-
-        Returns:
-            str: The name of the created instance.
-        """
-        instance_name = self.build_runner_instance_name(template_name)
-        startup_script = self._build_startup_script_with_registration_token(
-            registration_token,
-            repo_url,
-            template_name,
-            instance_name
-        )
-        return self._create_runner_instance_from_startup_script(
-            startup_script,
-            template_name,
-            instance_name,
-            instance_label
-        )
-
-    def create_runner_instance_from_jit_config(self, encoded_jit_config, template_name, instance_name, instance_label=None):
+    def create_runner_instance(self, encoded_jit_config, template_name, instance_name, instance_label=None):
         """Create a new GCE runner instance from an encoded JIT config."""
-        startup_script = self._build_startup_script_with_jit_config(encoded_jit_config)
+        startup_script = self._build_startup_script(encoded_jit_config)
         return self._create_runner_instance_from_startup_script(
             startup_script,
             template_name,

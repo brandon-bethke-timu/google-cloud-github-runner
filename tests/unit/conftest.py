@@ -28,7 +28,7 @@ def mock_github_client():
     """Mock GitHubClient for testing."""
     with patch('app.clients.github_client.GitHubClient') as mock:
         instance = Mock()
-        instance.get_registration_token.return_value = "fake-token-12345"
+        instance.get_jit_config.return_value = "fake-jit-config-12345"
         instance.get_installation_access_token.return_value = "fake-install-token"
         mock.return_value = instance
         yield instance

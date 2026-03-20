@@ -17,7 +17,7 @@ class TestFixtures:
     def test_mock_github_client_fixture(self, mock_github_client):
         """Test that mock_github_client fixture returns correct values."""
         assert mock_github_client is not None
-        assert mock_github_client.get_registration_token.return_value == "fake-token-12345"
+        assert mock_github_client.get_jit_config.return_value == "fake-jit-config-12345"
         assert mock_github_client.get_installation_access_token.return_value == "fake-install-token"
 
     def test_mock_gcloud_client_fixture(self, mock_gcloud_client):

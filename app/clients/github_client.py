@@ -101,26 +101,6 @@ class GitHubClient:
 
         raise ValueError(f"Runner group '{runner_group_name or 'Default'}' not found for organization '{org_name}'")
 
-    def get_registration_token(self, org_name=None, repo_name=None):
-        """Gets a runner registration token."""
-        # https://docs.github.com/en/rest/actions/self-hosted-runners
-        token = self.get_installation_access_token()
-        headers = self._build_headers(token)
-        if org_name:
-            # GitHub Docs: https://t.ly/dAyGK
-            url = f'https://api.github.com/orgs/{org_name}/actions/runners/registration-token'
-            logger.info(f"Create registration token for organization: {org_name}")
-        elif repo_name:
-            # GitHub Docs: https://t.ly/n0w2a
-            url = f'https://api.github.com/repos/{repo_name}/actions/runners/registration-token'
-            logger.info(f"Create registration token for repository: {repo_name}")
-        else:
-            raise ValueError("Either org_name or repo_name must be provided")
-
-        response = requests.post(url, headers=headers, timeout=REQUEST_TIMEOUT)
-        response.raise_for_status()
-        return response.json()['token']
-
     def get_jit_config(self, runner_name, labels, org_name=None, repo_name=None, runner_group_name=None):
         """Generate an encoded JIT config for a self-hosted runner."""
         if not runner_name:

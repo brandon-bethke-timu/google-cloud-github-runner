@@ -68,7 +68,7 @@ class TestIntegrationWorkflow:
         mock_gc_instance = Mock()
         mock_gc_instance.build_runner_instance_name.return_value = "gcp-runner-12345"
         mock_gc_instance.github_runner_group = ''
-        mock_gc_instance.create_runner_instance_from_jit_config.return_value = "runner-test"
+        mock_gc_instance.create_runner_instance.return_value = "runner-test"
         mock_gcloud.return_value = mock_gc_instance
 
         # Send workflow_job webhook
@@ -94,4 +94,4 @@ class TestIntegrationWorkflow:
         assert response.status_code == 200
         assert response.json['status'] == 'success'
         mock_gh_instance.get_jit_config.assert_called_once()
-        mock_gc_instance.create_runner_instance_from_jit_config.assert_called_once()
+        mock_gc_instance.create_runner_instance.assert_called_once()

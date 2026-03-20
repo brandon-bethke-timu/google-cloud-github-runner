@@ -94,48 +94,6 @@ class TestGitHubClient:
         assert token == 'INSTALL_TOKEN'
         mock_post.assert_called_once()
 
-    @patch('app.clients.github_client.requests.post')
-    @patch.object(GitHubClient, 'get_installation_access_token')
-    def test_get_registration_token_for_repo(self, mock_install_token, mock_post, mock_env_vars):
-        """Test getting registration token for a repository."""
-        mock_install_token.return_value = "INSTALL_TOKEN"
-        mock_response = MagicMock()
-        mock_response.json.return_value = {'token': 'REG_TOKEN'}
-        mock_post.return_value = mock_response
-
-        client = GitHubClient()
-        token = client.get_registration_token(repo_name='owner/repo')
-
-        assert token == 'REG_TOKEN'
-        mock_post.assert_called_once()
-        args, kwargs = mock_post.call_args
-        assert 'repos/owner/repo' in args[0]
-
-    @patch('app.clients.github_client.requests.post')
-    @patch.object(GitHubClient, 'get_installation_access_token')
-    def test_get_registration_token_for_org(self, mock_install_token, mock_post, mock_env_vars):
-        """Test getting registration token for an organization."""
-        mock_install_token.return_value = "INSTALL_TOKEN"
-        mock_response = MagicMock()
-        mock_response.json.return_value = {'token': 'ORG_TOKEN'}
-        mock_post.return_value = mock_response
-
-        client = GitHubClient()
-        token = client.get_registration_token(org_name='my-org')
-
-        assert token == 'ORG_TOKEN'
-        args, kwargs = mock_post.call_args
-        assert 'orgs/my-org' in args[0]
-
-    @patch.object(GitHubClient, 'get_installation_access_token')
-    def test_get_registration_token_no_params(self, mock_install_token, mock_env_vars):
-        """Test that ValueError is raised when neither org nor repo is provided."""
-        mock_install_token.return_value = "FAKE_TOKEN"
-        client = GitHubClient()
-
-        with pytest.raises(ValueError, match="Either org_name or repo_name must be provided"):
-            client.get_registration_token()
-
     def test_get_private_key_no_source(self):
         """Test that ValueError is raised when no private key source is configured."""
         with patch.dict('os.environ', {'GITHUB_APP_ID': '12345', 'GITHUB_INSTALLATION_ID': '67890'}, clear=True):

@@ -63,70 +63,6 @@ class TestGCloudClient:
 
     @patch('app.clients.gcloud_client.compute_v1')
     def test_create_runner_instance(self, mock_compute, mock_env_vars):
-        """Test creating a runner instance."""
-        mock_instance_client = MagicMock()
-        mock_operation = MagicMock()
-        mock_operation.name = 'operation-123'
-        mock_instance_client.insert.return_value = mock_operation
-        mock_compute.InstancesClient.return_value = mock_instance_client
-
-        # Mock RegionInstanceTemplatesClient
-        mock_templates_client = MagicMock()
-        mock_template = MagicMock()
-        mock_template.name = 'gcp-ubuntu-24-04-12345678901234'
-        mock_template.self_link = ('https://www.googleapis.com/compute/v1/projects/test-project/regions/us-central1/'
-                                   'instanceTemplates/gcp-ubuntu-24-04-12345678901234')
-        mock_templates_client.list.return_value = [mock_template]
-        mock_compute.RegionInstanceTemplatesClient.return_value = mock_templates_client
-
-        client = GCloudClient()
-        instance_name = client.create_runner_instance(
-            'fake-token-12345678',
-            'https://github.com/owner/repo',
-            'gcp-ubuntu-24.04'
-        )
-
-        assert instance_name.startswith('gcp-runner-')
-        mock_instance_client.insert.assert_called_once()
-
-        startup_script = mock_compute.Items.call_args_list[0].kwargs['value']
-        assert startup_script.startswith('cd /actions-runner && ')
-        assert 'sudo -u runner ./config.sh' in startup_script
-        assert 'sudo -u runner ./run.sh' in startup_script
-        assert '--runnergroup' not in startup_script
-
-    @patch('app.clients.gcloud_client.compute_v1')
-    def test_create_runner_instance_with_runner_group(self, mock_compute, monkeypatch, mock_env_vars):
-        """Test creating a runner instance with runner group."""
-        monkeypatch.setenv('GITHUB_RUNNER_GROUP', 'platform-runners')
-
-        mock_instance_client = MagicMock()
-        mock_operation = MagicMock()
-        mock_operation.name = 'operation-123'
-        mock_instance_client.insert.return_value = mock_operation
-        mock_compute.InstancesClient.return_value = mock_instance_client
-
-        mock_templates_client = MagicMock()
-        mock_template = MagicMock()
-        mock_template.name = 'gcp-ubuntu-24-04-12345678901234'
-        mock_template.self_link = ('https://www.googleapis.com/compute/v1/projects/test-project/regions/us-central1/'
-                                   'instanceTemplates/gcp-ubuntu-24-04-12345678901234')
-        mock_templates_client.list.return_value = [mock_template]
-        mock_compute.RegionInstanceTemplatesClient.return_value = mock_templates_client
-
-        client = GCloudClient()
-        client.create_runner_instance(
-            'fake-token-12345678',
-            'https://github.com/owner/repo',
-            'gcp-ubuntu-24.04'
-        )
-
-        startup_script = mock_compute.Items.call_args_list[0].kwargs['value']
-        assert startup_script.startswith('cd /actions-runner && ')
-        assert '--runnergroup platform-runners' in startup_script
-
-    @patch('app.clients.gcloud_client.compute_v1')
-    def test_create_runner_instance_from_jit_config(self, mock_compute, mock_env_vars):
         """Test creating a runner instance from JIT config."""
         mock_instance_client = MagicMock()
         mock_operation = MagicMock()
@@ -143,7 +79,7 @@ class TestGCloudClient:
         mock_compute.RegionInstanceTemplatesClient.return_value = mock_templates_client
 
         client = GCloudClient()
-        instance_name = client.create_runner_instance_from_jit_config(
+        instance_name = client.create_runner_instance(
             'encoded-jit-config',
             'gcp-ubuntu-24.04',
             'gcp-runner-1234abcd5678efgh'
@@ -175,9 +111,9 @@ class TestGCloudClient:
 
         with pytest.raises(Exception, match="API Error"):
             client.create_runner_instance(
-                'fake-token',
-                'https://github.com/owner/repo',
-                'gcp-ubuntu-24.04'
+                'encoded-jit-config',
+                'gcp-ubuntu-24.04',
+                'gcp-runner-1234abcd5678efgh'
             )
 
     @patch('app.clients.gcloud_client.compute_v1')
@@ -266,9 +202,9 @@ class TestGCloudClient:
 
         client = GCloudClient()
         result = client.create_runner_instance(
-            'fake-token',
-            'https://github.com/owner/repo',
-            'non-existent-template'
+            'encoded-jit-config',
+            'non-existent-template',
+            'gcp-runner-1234abcd5678efgh'
         )
 
         assert result is None
