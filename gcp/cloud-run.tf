@@ -11,75 +11,106 @@ data "google_artifact_registry_docker_image" "container-image-github-runners-man
 }
 
 # Deploy the GitHub Actions Runners manager service on Cloud Run
-# https://github.com/GoogleCloudPlatform/cloud-foundation-fabric/blob/v53.0.0/modules/cloud-run-v2/README.md
-module "cloud_run_github_runners_manager" {
-  source     = "git::https://github.com/GoogleCloudPlatform/cloud-foundation-fabric//modules/cloud-run-v2?ref=v53.0.0"
-  project_id = module.project.project_id
-  name       = "github-runners-manager-${local.region_shortnames[var.region]}"
-  type       = "SERVICE"
-  region     = var.region
-  template = {
-    max_instance_request_concurrency = var.github_runners_manager_max_instance_request_concurrency
+# https://registry.terraform.io/providers/hashicorp/google/latest/docs/resources/cloud_run_v2_service
+resource "google_cloud_run_v2_service" "cloud_run_github_runners_manager" {
+  project  = module.project.project_id
+  name     = "github-runners-manager-${local.region_shortnames[var.region]}"
+  location = var.region
+  ingress  = "INGRESS_TRAFFIC_ALL"
+
+  scaling {
+    min_instance_count = var.github_runners_manager_min_instance_count
+    max_instance_count = var.github_runners_manager_max_instance_count
   }
-  containers = {
-    github-runners-manager = {
+
+  template {
+    service_account                  = module.service-account-cloud-run-github-runners-manager.email
+    execution_environment            = "EXECUTION_ENVIRONMENT_GEN2"
+    max_instance_request_concurrency = var.github_runners_manager_max_instance_request_concurrency
+
+    containers {
       image = data.google_artifact_registry_docker_image.container-image-github-runners-manager.self_link
-      resources = {
+
+      resources {
+        startup_cpu_boost = false
         limits = {
           cpu    = "1000m"
           memory = "512Mi"
         }
-        startup_cpu_boost = false # We do not scale to zero.
       }
-      env = {
-        GOOGLE_CLOUD_PROJECT = var.project_id
-        GOOGLE_CLOUD_ZONE    = "${var.region}-${var.zone}"
-        GITHUB_RUNNER_GROUP  = var.github_runner_group
+
+      env {
+        name  = "GOOGLE_CLOUD_PROJECT"
+        value = var.project_id
       }
-      env_from_key = {
-        GITHUB_APP_ID = {
-          # Secret may only be {secret} or
-          # projects/{project}/secrets/{secret},
-          # and secret may only have alphanumeric characters, hyphens, and underscores.
-          # Secret must be a global secret not a regional secret!
-          secret  = module.secret-manager.ids["github-app-id"]
-          version = "latest"
+
+      env {
+        name  = "GOOGLE_CLOUD_ZONE"
+        value = "${var.region}-${var.zone}"
+      }
+
+      env {
+        name  = "GITHUB_RUNNER_GROUP"
+        value = var.github_runner_group
+      }
+
+      env {
+        name = "GITHUB_APP_ID"
+        value_source {
+          secret_key_ref {
+            secret  = module.secret-manager.ids["github-app-id"]
+            version = "latest"
+          }
         }
-        GITHUB_INSTALLATION_ID = {
-          secret  = module.secret-manager.ids["github-installation-id"]
-          version = "latest"
+      }
+
+      env {
+        name = "GITHUB_INSTALLATION_ID"
+        value_source {
+          secret_key_ref {
+            secret  = module.secret-manager.ids["github-installation-id"]
+            version = "latest"
+          }
         }
-        GITHUB_PRIVATE_KEY = {
-          secret  = module.secret-manager.ids["github-private-key"]
-          version = "latest"
+      }
+
+      env {
+        name = "GITHUB_PRIVATE_KEY"
+        value_source {
+          secret_key_ref {
+            secret  = module.secret-manager.ids["github-private-key"]
+            version = "latest"
+          }
         }
-        GITHUB_WEBHOOK_SECRET = {
-          secret  = module.secret-manager.ids["github-webhook-secret"]
-          version = "latest"
+      }
+
+      env {
+        name = "GITHUB_WEBHOOK_SECRET"
+        value_source {
+          secret_key_ref {
+            secret  = module.secret-manager.ids["github-webhook-secret"]
+            version = "latest"
+          }
         }
       }
     }
   }
-  service_config = {
-    # Disable IAM permission check
-    # There should be no requirement to pass the roles/run.invoker to the IAM block to enable public access.
-    # This allows for the org policy domain restricted sharing org policy remain enabled.
-    invoker_iam_disabled = true
-    # Second generation Cloud Run for faster CPU.
-    # The first generation with faster cold starts is still too slow for our webhook.
-    gen2_execution_environment = true
-    scaling = {
-      min_instance_count = var.github_runners_manager_min_instance_count # Min. 1, we do not scale to zero.
-      max_instance_count = var.github_runners_manager_max_instance_count
-    }
-  }
-  service_account_config = {
-    create = false
-    email  = module.service-account-cloud-run-github-runners-manager.email
-  }
+
   deletion_protection = false
+
   depends_on = [
     google_secret_manager_secret_version.secret-version-default,
     time_sleep.wait_for_service_account_cloud_run
+  ]
+}
+
+# Allow public invocation of the webhook service
+# https://cloud.google.com/run/docs/authenticating/public
+resource "google_cloud_run_service_iam_binding" "cloud_run_github_runners_manager_public_invoker" {
+  location = google_cloud_run_v2_service.cloud_run_github_runners_manager.location
+  service  = google_cloud_run_v2_service.cloud_run_github_runners_manager.name
+  role     = "roles/run.invoker"
+  members = [
+    "allUsers"
   ]
 }
