@@ -371,5 +371,5 @@ python tools/gce.py delete --instance [INSTANCE_NAME]
 
 | Name | Description |
 |------|-------------|
-| <a name="output_github_runners_manager_url"></a> [github\_runners\_manager\_url](#output\_github\_runners\_manager\_url) | Service URL of the GitHub Actions Runners manager (Cloud Run) https://github.com/GoogleCloudPlatform/cloud-foundation-fabric/blob/v53.0.0/modules/cloud-run-v2/README.md#outputs |
+| <a name="output_github_runners_manager_url"></a> [github\_runners\_manager\_url](#output\_github\_runners\_manager\_url) | Service URL of the GitHub Actions Runners manager (Cloud Run) https://github.com/GoogleCloudPlatform/cloud-foundation-fabric/blob/v54.0.0/modules/cloud-run-v2/README.md#outputs |
 <!-- END_TF_DOCS -->
