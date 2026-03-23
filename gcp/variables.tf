@@ -182,14 +182,14 @@ variable "github_runners_default_type" {
     amd64 = {
       instance_type               = "c4-standard-4"
       disk_type                   = "hyperdisk-balanced"
-      disk_size                   = 10
+      disk_size                   = 150
       disk_provisioned_iops       = 3060
       disk_provisioned_throughput = 155
     }
     arm64 = {
       instance_type               = "c4a-standard-4"
       disk_type                   = "hyperdisk-balanced"
-      disk_size                   = 10
+      disk_size                   = 150
       disk_provisioned_iops       = 3060
       disk_provisioned_throughput = 155
     }
@@ -245,54 +245,6 @@ variable "github_runners_types" {
   }))
   # Similar to https://docs.github.com/en/enterprise-cloud@latest/actions/reference/runners/larger-runners
   default = [
-    {
-      name                        = "dependabot"
-      instance_type               = "e2-medium"
-      vcpu                        = 2
-      memory                      = 4
-      disk_type                   = "pd-ssd"
-      disk_size                   = 50
-      disk_provisioned_iops       = 0
-      disk_provisioned_throughput = 0
-      image                       = "ubuntu-2404-lts-amd64"
-      arch                        = "amd64"
-    },
-    {
-      name                        = "gcp-ubuntu-slim"
-      instance_type               = "e2-medium"
-      vcpu                        = 2
-      memory                      = 4
-      disk_type                   = "pd-ssd"
-      disk_size                   = 15
-      disk_provisioned_iops       = 0
-      disk_provisioned_throughput = 0
-      image                       = "ubuntu-2404-lts-amd64"
-      arch                        = "amd64"
-    },
-    {
-      name                        = "gcp-ubuntu-latest"
-      instance_type               = "c4-standard-4"
-      vcpu                        = 4
-      memory                      = 16
-      disk_type                   = "hyperdisk-balanced"
-      disk_size                   = 25
-      disk_provisioned_iops       = 3060
-      disk_provisioned_throughput = 155
-      image                       = "ubuntu-2404-lts-amd64"
-      arch                        = "amd64"
-    },
-    {
-      name                        = "gcp-ubuntu-24-04"
-      instance_type               = "c4-standard-4"
-      vcpu                        = 4
-      memory                      = 16
-      disk_type                   = "hyperdisk-balanced"
-      disk_size                   = 25
-      disk_provisioned_iops       = 3060
-      disk_provisioned_throughput = 155
-      image                       = "ubuntu-2404-lts-amd64"
-      arch                        = "amd64"
-    },
     {
       name                        = "gcp-ubuntu-24-04-2core"
       instance_type               = "c4-standard-2"
@@ -366,66 +318,6 @@ variable "github_runners_types" {
       arch                        = "amd64"
     },
     {
-      name                        = "gcp-ubuntu-24-04-96core"
-      instance_type               = "n2d-standard-96"
-      vcpu                        = 96
-      memory                      = 384
-      disk_type                   = "pd-ssd"
-      disk_size                   = 2040
-      disk_provisioned_iops       = 0
-      disk_provisioned_throughput = 0
-      image                       = "ubuntu-2404-lts-amd64"
-      arch                        = "amd64"
-    },
-    {
-      name                        = "gcp-ubuntu-24-04-128core"
-      instance_type               = "n2d-standard-128"
-      vcpu                        = 128
-      memory                      = 512
-      disk_type                   = "pd-ssd"
-      disk_size                   = 2040
-      disk_provisioned_iops       = 0
-      disk_provisioned_throughput = 0
-      image                       = "ubuntu-2404-lts-amd64"
-      arch                        = "amd64"
-    },
-    {
-      name                        = "gcp-ubuntu-slim-arm"
-      instance_type               = "c4a-standard-1"
-      vcpu                        = 1
-      memory                      = 4
-      disk_type                   = "hyperdisk-balanced"
-      disk_size                   = 15
-      disk_provisioned_iops       = 3090
-      disk_provisioned_throughput = 162
-      image                       = "ubuntu-2404-lts-arm64"
-      arch                        = "arm64"
-    },
-    {
-      name                        = "gcp-ubuntu-latest-arm"
-      instance_type               = "c4a-standard-4"
-      vcpu                        = 4
-      memory                      = 16
-      disk_type                   = "hyperdisk-balanced"
-      disk_size                   = 25
-      disk_provisioned_iops       = 3150
-      disk_provisioned_throughput = 177
-      image                       = "ubuntu-2404-lts-arm64"
-      arch                        = "arm64"
-    },
-    {
-      name                        = "gcp-ubuntu-24-04-arm"
-      instance_type               = "c4a-standard-4"
-      vcpu                        = 4
-      memory                      = 16
-      disk_type                   = "hyperdisk-balanced"
-      disk_size                   = 25
-      disk_provisioned_iops       = 3150
-      disk_provisioned_throughput = 177
-      image                       = "ubuntu-2404-lts-arm64"
-      arch                        = "arm64"
-    },
-    {
       name                        = "gcp-ubuntu-24-04-2core-arm"
       instance_type               = "c4a-standard-2"
       vcpu                        = 2
@@ -496,19 +388,7 @@ variable "github_runners_types" {
       disk_provisioned_throughput = 2400
       image                       = "ubuntu-2404-lts-arm64"
       arch                        = "arm64"
-    },
-    {
-      name                        = "gcp-ubuntu-24-04-72core-arm"
-      instance_type               = "c4a-standard-72"
-      vcpu                        = 72
-      memory                      = 288
-      disk_type                   = "hyperdisk-balanced"
-      disk_size                   = 2040
-      disk_provisioned_iops       = 15240
-      disk_provisioned_throughput = 2400
-      image                       = "ubuntu-2404-lts-arm64"
-      arch                        = "arm64"
-    },
+    }
   ]
 
   validation {
