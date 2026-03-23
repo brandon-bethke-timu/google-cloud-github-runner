@@ -181,7 +181,7 @@ variable "github_runners_default_type" {
   default = {
     amd64 = {
       instance_type               = "c4-standard-4"
-      disk_type                   = "pd-ssd"
+      disk_type                   = "hyperdisk-balanced"
       disk_size                   = 10
       disk_provisioned_iops       = 0
       disk_provisioned_throughput = 0
@@ -274,7 +274,7 @@ variable "github_runners_types" {
       instance_type               = "c4-standard-4"
       vcpu                        = 4
       memory                      = 16
-      disk_type                   = "pd-ssd"
+      disk_type                   = "hyperdisk-balanced"
       disk_size                   = 25
       disk_provisioned_iops       = 0
       disk_provisioned_throughput = 0
@@ -286,7 +286,7 @@ variable "github_runners_types" {
       instance_type               = "c4-standard-4"
       vcpu                        = 4
       memory                      = 16
-      disk_type                   = "pd-ssd"
+      disk_type                   = "hyperdisk-balanced"
       disk_size                   = 25
       disk_provisioned_iops       = 0
       disk_provisioned_throughput = 0
@@ -298,7 +298,7 @@ variable "github_runners_types" {
       instance_type               = "c4-standard-2"
       vcpu                        = 2
       memory                      = 8
-      disk_type                   = "pd-ssd"
+      disk_type                   = "hyperdisk-balanced"
       disk_size                   = 75
       disk_provisioned_iops       = 0
       disk_provisioned_throughput = 0
@@ -310,7 +310,7 @@ variable "github_runners_types" {
       instance_type               = "c4-standard-4"
       vcpu                        = 4
       memory                      = 16
-      disk_type                   = "pd-ssd"
+      disk_type                   = "hyperdisk-balanced"
       disk_size                   = 150
       disk_provisioned_iops       = 0
       disk_provisioned_throughput = 0
@@ -322,7 +322,7 @@ variable "github_runners_types" {
       instance_type               = "c4-standard-8"
       vcpu                        = 8
       memory                      = 32
-      disk_type                   = "pd-ssd"
+      disk_type                   = "hyperdisk-balanced"
       disk_size                   = 300
       disk_provisioned_iops       = 0
       disk_provisioned_throughput = 0
@@ -334,7 +334,7 @@ variable "github_runners_types" {
       instance_type               = "c4-standard-16"
       vcpu                        = 16
       memory                      = 64
-      disk_type                   = "pd-ssd"
+      disk_type                   = "hyperdisk-balanced"
       disk_size                   = 600
       disk_provisioned_iops       = 0
       disk_provisioned_throughput = 0
@@ -346,7 +346,7 @@ variable "github_runners_types" {
       instance_type               = "c4-standard-32"
       vcpu                        = 32
       memory                      = 128
-      disk_type                   = "pd-ssd"
+      disk_type                   = "hyperdisk-balanced"
       disk_size                   = 1200
       disk_provisioned_iops       = 0
       disk_provisioned_throughput = 0
@@ -358,7 +358,7 @@ variable "github_runners_types" {
       instance_type               = "c4-standard-64"
       vcpu                        = 64
       memory                      = 256
-      disk_type                   = "pd-ssd"
+      disk_type                   = "hyperdisk-balanced"
       disk_size                   = 2040
       disk_provisioned_iops       = 0
       disk_provisioned_throughput = 0
