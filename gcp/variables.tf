@@ -183,8 +183,8 @@ variable "github_runners_default_type" {
       instance_type               = "c4-standard-4"
       disk_type                   = "hyperdisk-balanced"
       disk_size                   = 10
-      disk_provisioned_iops       = 0
-      disk_provisioned_throughput = 0
+      disk_provisioned_iops       = 3060
+      disk_provisioned_throughput = 155
     }
     arm64 = {
       instance_type               = "c4a-standard-4"
@@ -276,8 +276,8 @@ variable "github_runners_types" {
       memory                      = 16
       disk_type                   = "hyperdisk-balanced"
       disk_size                   = 25
-      disk_provisioned_iops       = 0
-      disk_provisioned_throughput = 0
+      disk_provisioned_iops       = 3060
+      disk_provisioned_throughput = 155
       image                       = "ubuntu-2404-lts-amd64"
       arch                        = "amd64"
     },
@@ -288,8 +288,8 @@ variable "github_runners_types" {
       memory                      = 16
       disk_type                   = "hyperdisk-balanced"
       disk_size                   = 25
-      disk_provisioned_iops       = 0
-      disk_provisioned_throughput = 0
+      disk_provisioned_iops       = 3060
+      disk_provisioned_throughput = 155
       image                       = "ubuntu-2404-lts-amd64"
       arch                        = "amd64"
     },
@@ -300,8 +300,8 @@ variable "github_runners_types" {
       memory                      = 8
       disk_type                   = "hyperdisk-balanced"
       disk_size                   = 75
-      disk_provisioned_iops       = 0
-      disk_provisioned_throughput = 0
+      disk_provisioned_iops       = 3450
+      disk_provisioned_throughput = 252
       image                       = "ubuntu-2404-lts-amd64"
       arch                        = "amd64"
     },
@@ -312,8 +312,8 @@ variable "github_runners_types" {
       memory                      = 16
       disk_type                   = "hyperdisk-balanced"
       disk_size                   = 150
-      disk_provisioned_iops       = 0
-      disk_provisioned_throughput = 0
+      disk_provisioned_iops       = 3150
+      disk_provisioned_throughput = 177
       image                       = "ubuntu-2404-lts-amd64"
       arch                        = "amd64"
     },
@@ -324,8 +324,8 @@ variable "github_runners_types" {
       memory                      = 32
       disk_type                   = "hyperdisk-balanced"
       disk_size                   = 300
-      disk_provisioned_iops       = 0
-      disk_provisioned_throughput = 0
+      disk_provisioned_iops       = 4800
+      disk_provisioned_throughput = 590
       image                       = "ubuntu-2404-lts-amd64"
       arch                        = "amd64"
     },
@@ -336,8 +336,8 @@ variable "github_runners_types" {
       memory                      = 64
       disk_type                   = "hyperdisk-balanced"
       disk_size                   = 600
-      disk_provisioned_iops       = 0
-      disk_provisioned_throughput = 0
+      disk_provisioned_iops       = 6600
+      disk_provisioned_throughput = 1040
       image                       = "ubuntu-2404-lts-amd64"
       arch                        = "amd64"
     },
@@ -348,8 +348,8 @@ variable "github_runners_types" {
       memory                      = 128
       disk_type                   = "hyperdisk-balanced"
       disk_size                   = 1200
-      disk_provisioned_iops       = 0
-      disk_provisioned_throughput = 0
+      disk_provisioned_iops       = 10200
+      disk_provisioned_throughput = 1940
       image                       = "ubuntu-2404-lts-amd64"
       arch                        = "amd64"
     },
@@ -360,8 +360,8 @@ variable "github_runners_types" {
       memory                      = 256
       disk_type                   = "hyperdisk-balanced"
       disk_size                   = 2040
-      disk_provisioned_iops       = 0
-      disk_provisioned_throughput = 0
+      disk_provisioned_iops       = 15240
+      disk_provisioned_throughput = 2400
       image                       = "ubuntu-2404-lts-amd64"
       arch                        = "amd64"
     },
