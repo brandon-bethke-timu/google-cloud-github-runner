@@ -180,7 +180,7 @@ variable "github_runners_default_type" {
   })
   default = {
     amd64 = {
-      instance_type               = "e2-standard-4"
+      instance_type               = "c4-standard-4"
       disk_type                   = "pd-ssd"
       disk_size                   = 10
       disk_provisioned_iops       = 0
@@ -271,7 +271,7 @@ variable "github_runners_types" {
     },
     {
       name                        = "gcp-ubuntu-latest"
-      instance_type               = "e2-standard-4"
+      instance_type               = "c4-standard-4"
       vcpu                        = 4
       memory                      = 16
       disk_type                   = "pd-ssd"
@@ -283,7 +283,7 @@ variable "github_runners_types" {
     },
     {
       name                        = "gcp-ubuntu-24-04"
-      instance_type               = "e2-standard-4"
+      instance_type               = "c4-standard-4"
       vcpu                        = 4
       memory                      = 16
       disk_type                   = "pd-ssd"
@@ -295,7 +295,7 @@ variable "github_runners_types" {
     },
     {
       name                        = "gcp-ubuntu-24-04-2core"
-      instance_type               = "e2-standard-2"
+      instance_type               = "c4-standard-2"
       vcpu                        = 2
       memory                      = 8
       disk_type                   = "pd-ssd"
@@ -307,7 +307,7 @@ variable "github_runners_types" {
     },
     {
       name                        = "gcp-ubuntu-24-04-4core"
-      instance_type               = "e2-standard-4"
+      instance_type               = "c4-standard-4"
       vcpu                        = 4
       memory                      = 16
       disk_type                   = "pd-ssd"
@@ -319,7 +319,7 @@ variable "github_runners_types" {
     },
     {
       name                        = "gcp-ubuntu-24-04-8core"
-      instance_type               = "e2-standard-8"
+      instance_type               = "c4-standard-8"
       vcpu                        = 8
       memory                      = 32
       disk_type                   = "pd-ssd"
@@ -331,7 +331,7 @@ variable "github_runners_types" {
     },
     {
       name                        = "gcp-ubuntu-24-04-16core"
-      instance_type               = "e2-standard-16"
+      instance_type               = "c4-standard-16"
       vcpu                        = 16
       memory                      = 64
       disk_type                   = "pd-ssd"
@@ -343,7 +343,7 @@ variable "github_runners_types" {
     },
     {
       name                        = "gcp-ubuntu-24-04-32core"
-      instance_type               = "e2-standard-32"
+      instance_type               = "c4-standard-32"
       vcpu                        = 32
       memory                      = 128
       disk_type                   = "pd-ssd"
@@ -355,7 +355,7 @@ variable "github_runners_types" {
     },
     {
       name                        = "gcp-ubuntu-24-04-64core"
-      instance_type               = "e2-standard-64"
+      instance_type               = "c4-standard-64"
       vcpu                        = 64
       memory                      = 256
       disk_type                   = "pd-ssd"
